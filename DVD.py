@@ -47,12 +47,6 @@ org = p.image.load(rp('./sprites/o.png'))
 ylw = p.image.load(rp('./sprites/y.png'))
 p.display.set_icon(wht)
 
-def new_color():
-    """
-    Function for getting random colors
-    """
-    return r.choice([wht, blu, pnk, pur, grn, org, ylw])
-
 def get_info():
     """
     Function for getting in game live information
@@ -84,6 +78,15 @@ def get_info():
     corner = "Corner hits: "+str(c) #gets corner hits
 
     return ["DVD X: "+str(curPosX)+" Y: "+str(curPosY), "Screen Width: "+str(curW)+" Height: "+str(curH), "FPS: "+str(fps), hits, corner, color]
+
+def hit_edge(xy):
+    """
+    Function for when logo hits the edge
+        xy: int, expects 1 if horizontal edge is hit and 0 if vertical edge is hit.
+    """
+    vel[xy] = -vel[xy] #"Bounces" logo of the edge
+    DVD = r.choice([wht, blu, pnk, pur, grn, org, ylw]) #sets logo to new random color
+    p.display.set_icon(DVD) #sets window icon to cureent logo color
 
 while run:
     for event in p.event.get():
@@ -154,31 +157,23 @@ while run:
     #Checks if logo hits a wall
     if x >= width-29:
         print("right")
-        vel[0] = -vel[0] #Makes logo 'bounce' off wall
-        DVD = new_color() #Sets a new color to the logo
-        p.display.set_icon(DVD) #Sets icon to same color as logo
-        h += 1 #Adds one total hit counter
+        hit_edge(0)
+        h += 1 #increases hit counter
         
     if x <= 29:
         print("left")
-        vel[0] = -vel[0]
-        DVD = new_color()
-        p.display.set_icon(DVD)
-        h += 1
+        hit_edge(0)
+        h += 1 #increases hit counter
         
     if y >= height-19:
         print("bottom")
-        vel[1] = -vel[1]
-        DVD = new_color()
-        p.display.set_icon(DVD)
-        h += 1
+        hit_edge(1)
+        h += 1 #increases hit counter
 
     if y <= 19:
         print("top")
-        vel[1] = -vel[1]
-        DVD = new_color()
-        p.display.set_icon(DVD)
-        h += 1
+        hit_edge(1)
+        h += 1 #increases hit counter
 
     DVDRECT.center = (x, y) #moves the logo
     screen.fill((0, 0, 0)) #sets background to black
