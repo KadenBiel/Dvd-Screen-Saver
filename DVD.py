@@ -1,4 +1,6 @@
-import pygame as p, random as r, time as t, sys, tkinter as tk, os
+import pygame as p, pygame_widgets as pw, random as r, time as t, sys, tkinter as tk, os
+from pygame_widgets.slider import Slider
+from pygame_widgets.textbox import TextBox
 
 def rp(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -10,6 +12,26 @@ def rp(relative_path):
 
     return os.path.join(base_path, relative_path)
 
+def intIn(txt):
+    try:
+        txt = int(txt)
+        if txt > 30 or txt < 0:
+            raise Exception("input out of bounds")
+    except:
+        return False
+    return True
+
+def submit():
+    if intIn(speedL.getText()):
+        speed.setValue(int(speedL.getText()))
+    else:
+        if str(speedL.getText()).lower() == 'fast':
+            speed.max = 120
+            speed.setValue(120)
+        elif str(speedL.getText()).lower() == 'slow':
+            speed.min = 0
+            speed.setValue(.01)
+
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 width, height = 640, 480 #Initial screen width & height
 x, y, vel = 0, 0, [1, 1] #Makes coordinates and velocity
@@ -18,21 +40,28 @@ fullscr = False #sets bool to toggle full screen
 iter = False #sets iteration bool for fullscreen toggles
 catch = False #sets catch bool for fullscreen toggles
 showHelp = False #sets the bool to bring up the help menu
+settings = False #sets bool to toggle the settings menu
 showMenuHelp = True #sets the bool to toggle the --Press H for help--
 c = 0 #sets counter for corner hits
 h = 0 #sets counter for total hits
 corners = [(width-29, height-19), (29, 19), (width-29, 19), (29, height-19)] #defiones list of all corner coordinates
-helpmsg = ["----Help----", "F3: Show live in-game information", "F11: Fullscreen toggle", "r: set the logo to the center of the screen", "h: Toggle this menu"] #defines list of lines in the help message
+helpmsg = ["----Help----", "F3: Show live in-game information", "F11: Fullscreen toggle", "R: set the logo to the center of the screen", "H: Toggle this menu", "S: Open settings"] #defines list of lines in the help message
 DVD = p.image.load(rp('./sprites/w.png')) #Loads a sprite
 DVDRECT = DVD.get_rect() #Makes object for the sprites to be loaded onto
 p.display.set_caption('DVD')#Sets executable capton
 screen = p.display.set_mode((width, height), p.RESIZABLE) #Sets screen to resizable mode
-fps = 90 #sets FPS
+fps = 60 #sets FPS
 clock = p.time.Clock() #sets FPS clock
 p.init() #Initialize Pygame
-Font = p.font.Font(rp('dvdFont.ttf'), 18) #initializes font
+Font = p.font.Font(rp('dvdFont.ttf'), 25) #initializes font
 more = Font.render("--Press H for help--", True, (255, 255, 255)) #makes default on boot helper
 morerect = more.get_rect() #makes surface for default on boot helper
+speed = Slider(screen, 100, 100, 800, 20, min=.5, max=30, step=.25, curved=False, initial=1)
+speed.hide()
+speedL = TextBox(screen, 100, 150, 50, 30, fontSize=20, radius=10, onSubmit=submit)
+speedL.setText('1.0')
+speedL.hide()
+altSpeed = 'n'
 run = True
 
 x, y = r.choice([570, 571, 572]), r.choice([420, 421, 422]) #sets the start location
@@ -87,9 +116,11 @@ def hit_edge(xy):
     vel[xy] = -vel[xy] #"Bounces" logo of the edge
     DVD = r.choice([wht, blu, pnk, pur, grn, org, ylw]) #sets logo to new random color
     p.display.set_icon(DVD) #sets window icon to cureent logo color
+    return DVD
 
 while run:
-    for event in p.event.get():
+    events = p.event.get()
+    for event in events:
         #Exits if user closes window
         if event.type == p.QUIT:
             print("exiting")
@@ -97,6 +128,16 @@ while run:
 
         if event.type == p.KEYUP:
             #toggles info menu
+
+            if event.key == p.K_ESCAPE:
+                if showMenuHelp:
+                    showMenuHelp = False
+                elif showHelp:
+                    showHelp = False
+                else:
+                    print("exiting")
+                    run = False
+
             if event.key == p.K_F3:
                 showInfo = not showInfo
 
@@ -104,15 +145,10 @@ while run:
             if event.key == p.K_F11:
                 if not fullscr:
                     fullscr = True
-                    iter = False
-                    root = tk.Tk()
-                    scrw = root.winfo_screenwidth()
-                    scrh = root.winfo_screenheight()
-                    screen = p.display.set_mode((scrw, scrh), p.RESIZABLE)
                     screen = p.display.set_mode((0, 0), p.FULLSCREEN)
                 else:
                     fullscr = False
-                    screen = p.display.set_mode((640, 480), p.RESIZABLE)
+                    screen = p.display.set_mode((width-20, height-80), p.RESIZABLE)
 
             #resets the logo to the center of the window
             if event.key == p.K_r:
@@ -124,23 +160,17 @@ while run:
                 showHelp = not showHelp
                 showMenuHelp = False
 
-            #toggles default on boot helper
+            #toggles settings
             if event.key == p.K_s:
-                showMenuHelp = not showMenuHelp
+                if not speedL.selected:
+                    settings = not settings
 
-        #checks if the user changed window dimensions and adjust the game surface accordingly
-        if event.type == p.VIDEORESIZE:
-            scrsize = event.size
-            screen = p.display.set_mode(scrsize, p.RESIZABLE)
-            width, height = scrsize[0], scrsize[1]
-            if DVDRECT.center[0] >= width-29:
-                y = DVDRECT.center[1]
-                x = width-30
-                DVDRECT.center = (x, y)
-            if DVDRECT.center[1] >= height-19:
-                y = height-20
-                DVDRECT.center = (x, y)
-            corners = [(width-29, height-19), (29, 19), (width-29, 19), (29, height-19)]
+                if settings:
+                    speed.show()
+                    speedL.show()
+                else:
+                    speed.hide()
+                    speedL.hide()
 
     src = p.display.Info()
     width, height = src.current_w, src.current_h
@@ -155,30 +185,34 @@ while run:
         c += 1
 
     #Checks if logo hits a wall
-    if x >= width-29:
+    if x > width-30:
         print("right")
-        hit_edge(0)
+        DVD = hit_edge(0)
         h += 1 #increases hit counter
+        x = width-30
         
-    if x <= 29:
+    if x < 30:
         print("left")
-        hit_edge(0)
+        DVD = hit_edge(0)
         h += 1 #increases hit counter
+        x = 30
         
-    if y >= height-19:
+    if y > height-20:
         print("bottom")
-        hit_edge(1)
+        DVD = hit_edge(1)
         h += 1 #increases hit counter
+        y = height-20
 
-    if y <= 19:
+    if y < 20:
         print("top")
-        hit_edge(1)
+        DVD = hit_edge(1)
         h += 1 #increases hit counter
+        y = 20
 
+    screen.fill((0, 0, 0)) #redraws black background
     DVDRECT.center = (x, y) #moves the logo
-    screen.fill((0, 0, 0)) #sets background to black
     screen.blit(DVD, DVDRECT) #Updates logo
-    Iy = 6 #sets text starting Y coordinate
+    Iy = 9 #sets text starting Y coordinate
 
     #shows live info menu
     if showInfo:
@@ -188,7 +222,7 @@ while run:
             curInRect = curIn.get_rect()
             curInRect.center = (round(curInRect.w/2), Iy)
             screen.blit(curIn, curInRect)
-            Iy += 12
+            Iy += 18
 
     #shows help menu
     if showHelp:
@@ -197,23 +231,55 @@ while run:
             helprect = help.get_rect()
             helprect.center = (round(helprect.w/2), Iy)
             screen.blit(help, helprect)
-            Iy += 12
+            Iy += 18
     else:
         #shows default on boot helper
         if showMenuHelp:
             morerect.center = (round(morerect.w/2), Iy)
             screen.blit(more, morerect)
 
-    #sets to fullscreen 1 frame after surface is resized to the display resolution
-    if fullscr and iter and catch:
-        screen = p.display.set_mode((0, 0), p.FULLSCREEN)
-        catch = False
+    #displays settings menu
+    if settings:
+        bkg = p.Surface((width, height)) #creates and draws transparent background for menu
+        bkg.set_alpha(100)
+        bkg.fill((207,207,207))
+        screen.blit(bkg, (0,0))
 
-    #sets bools to make the previous IF statment run in the next frame
-    if fullscr and iter != True:
-        iter = True
-        catch = True
+        speed.setWidth(width-200)
+        speedL.setX(int(round(width/2))-int(round(speedL.getWidth()/2)))
 
+        if abs(vel[0]) != speed.getValue():
+            if speed.getValue() > 30 and altSpeed != 'f':
+                altSpeed = 'f'
+                speedL.setText('fast')
+            elif speed.getValue() > 30 and altSpeed == 'f':
+                speed.setValue(30)
+                speed.max = 30
+                altSpeed = 'n'
+            elif speed.getValue() < .5 and altSpeed != 's':
+                altSpeed = 's'
+                speedL.setText('slow')
+            elif speed.getValue() < .5 and altSpeed == 's':
+                speed.setValue(.5)
+                speed.min = .5
+                altSpeed = 'n'
+            else:
+                altSpeed = 'n'
+                speed.min = .5
+                speed.max = 30
+                speedL.setText(speed.getValue())
+
+        if vel[0] < 0:
+            vel[0] = -(speed.getValue())
+        else:
+            vel[0] = speed.getValue()
+
+        if vel[1] < 0:
+            vel[1] = -(speed.getValue())
+        else:
+            vel[1] = speed.getValue()
+
+    pw.update(events)
     p.display.update() #updates screen
     clock.tick(fps) #updates fps clock
 
