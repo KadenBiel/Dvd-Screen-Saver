@@ -12,25 +12,34 @@ def rp(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-def intIn(txt):
+def intIn(txt, min, max):
     try:
-        txt = int(txt)
-        if txt > 30 or txt < 0:
+        txt = float(txt)
+        if txt > max or txt < min:
             raise Exception("input out of bounds")
-    except:
+    except Exception as e:
+        print(e)
         return False
     return True
 
-def submit():
-    if intIn(speedL.getText()):
-        speed.setValue(int(speedL.getText()))
-    else:
-        if str(speedL.getText()).lower() == 'fast':
-            speed.max = 120
-            speed.setValue(120)
-        elif str(speedL.getText()).lower() == 'slow':
-            speed.min = 0
-            speed.setValue(.01)
+def submit(id, min, max):
+    if id == 's':
+        if intIn(speedL.getText(), min, max):
+            speed.setValue(float(speedL.getText()))
+        else:
+            if str(speedL.getText()).lower() == 'fast':
+                speed.max = 120
+                speed.setValue(120)
+            elif str(speedL.getText()).lower() == 'slow':
+                speed.min = 0
+                speed.setValue(.01)
+            else:
+                speedL.setText(speed.getValue())
+    elif id == 'f':
+        if intIn(fpsL.getText(), min, max):
+            fpsS.setValue(float(fpsL.getText()))
+        else:
+            fpsL.setText(fpsS.getValue())
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 width, height = 640, 480 #Initial screen width & height
@@ -54,13 +63,19 @@ fps = 60 #sets FPS
 clock = p.time.Clock() #sets FPS clock
 p.init() #Initialize Pygame
 Font = p.font.Font(rp('dvdFont.ttf'), 25) #initializes font
+bigFont = p.font.Font(rp('dvdFont.ttf'), 35)
 more = Font.render("--Press H for help--", True, (255, 255, 255)) #makes default on boot helper
 morerect = more.get_rect() #makes surface for default on boot helper
-speed = Slider(screen, 100, 100, 800, 20, min=.5, max=30, step=.25, curved=False, initial=1)
+speed = Slider(screen, 100, 50, 800, 20, min=.5, max=30, step=.25, initial=1, colour=(174, 235, 230))
 speed.hide()
-speedL = TextBox(screen, 100, 150, 50, 30, fontSize=20, radius=10, onSubmit=submit)
+speedL = TextBox(screen, 100, 80, 50, 30, fontSize=20, radius=10, onSubmit=submit, onSubmitParams=('s', .5, 30), borderThickness=1, colour=(174, 235, 230))
 speedL.setText('1.0')
 speedL.hide()
+fpsS = Slider(screen, 100, 200, 800, 20, min=5, max=180, step=1, initial=60, colour=(174, 235, 230))
+fpsS.hide()
+fpsL = TextBox(screen, 100, 230, 40, 30, fontSize=20, radius=10, onSubmit=submit, onSubmitParams=('f', 5, 180), borderThickness=1, colour=(174, 235, 230))
+fpsL.setText('60')
+fpsL.hide()
 altSpeed = 'n'
 run = True
 
@@ -118,6 +133,32 @@ def hit_edge(xy):
     p.display.set_icon(DVD) #sets window icon to cureent logo color
     return DVD
 
+def textHollow(font, message, fontcolor):
+    notcolor = [c^0xFF for c in fontcolor]
+    base = font.render(message, 0, fontcolor, notcolor)
+    size = base.get_width() + 2, base.get_height() + 2
+    img = p.Surface(size, 16)
+    img.fill(notcolor)
+    base.set_colorkey(0)
+    img.blit(base, (0, 0))
+    img.blit(base, (2, 0))
+    img.blit(base, (0, 2))
+    img.blit(base, (2, 2))
+    base.set_colorkey(0)
+    base.set_palette_at(1, notcolor)
+    img.blit(base, (1, 1))
+    img.set_colorkey(notcolor)
+    return img
+
+def textOutline(font, message, fontcolor, outlinecolor):
+    base = font.render(message, 0, fontcolor)
+    outline = textHollow(font, message, outlinecolor)
+    img = p.Surface(outline.get_size(), 16)
+    img.blit(base, (1, 1))
+    img.blit(outline, (0, 0))
+    img.set_colorkey(0)
+    return img
+
 while run:
     events = p.event.get()
     for event in events:
@@ -162,15 +203,19 @@ while run:
 
             #toggles settings
             if event.key == p.K_s:
-                if not speedL.selected:
+                if not speedL.selected and not fpsL.selected:
                     settings = not settings
 
                 if settings:
                     speed.show()
                     speedL.show()
+                    fpsS.show()
+                    fpsL.show()
                 else:
                     speed.hide()
                     speedL.hide()
+                    fpsS.hide()
+                    fpsL.hide()
 
     src = p.display.Info()
     width, height = src.current_w, src.current_h
@@ -241,12 +286,24 @@ while run:
     #displays settings menu
     if settings:
         bkg = p.Surface((width, height)) #creates and draws transparent background for menu
-        bkg.set_alpha(100)
-        bkg.fill((207,207,207))
+        bkg.set_alpha(50)
+        bkg.fill((200, 222, 221))
         screen.blit(bkg, (0,0))
+
+        spTxt = bigFont.render('Speed', True, (255,255,255))
+        spRect = spTxt.get_rect()
+        spRect.center = (round(width/2), 25)
+        screen.blit(spTxt, spRect)
+
+        fpTxt = bigFont.render('FPS', True, (255,255,255))
+        fpRect = fpTxt.get_rect()
+        fpRect.center = (round(width/2), 175)
+        screen.blit(fpTxt, fpRect)
 
         speed.setWidth(width-200)
         speedL.setX(int(round(width/2))-int(round(speedL.getWidth()/2)))
+        fpsS.setWidth(width-200)
+        fpsL.setX(int(round(width/2))-int(round(speedL.getWidth()/2)))
 
         if abs(vel[0]) != speed.getValue():
             if speed.getValue() > 30 and altSpeed != 'f':
@@ -268,6 +325,10 @@ while run:
                 speed.min = .5
                 speed.max = 30
                 speedL.setText(speed.getValue())
+        
+        if fps != fpsS.getValue():
+            fpsL.setText(fpsS.getValue())
+            fps = fpsS.getValue()
 
         if vel[0] < 0:
             vel[0] = -(speed.getValue())
