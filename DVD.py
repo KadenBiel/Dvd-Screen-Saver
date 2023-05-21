@@ -127,6 +127,7 @@ morerect = more.get_rect() #makes surface for default on boot helper
 run = True
 x, y = r.choice([570, 571, 572]), r.choice([420, 421, 422]) #sets the start location
 counter = 0
+fpsList = []
 
 #Loads in sprites
 wht = p.image.load(rp('./sprites/w.png'))
@@ -317,7 +318,13 @@ while run:
     if showInfo:
         info = get_info()
         for i in info:
-            curIn = Font.render(i, True, (255,255,255))
+            txt = i
+            if i == info[2]:
+                fpsList.append(int(txt.replace("FPS: ", '')))
+                txt = "FPS: " + str(round(sum(fpsList)/len(fpsList)))
+                while len(fpsList) > fps*2:
+                    fpsList.pop(0)
+            curIn = Font.render(txt, True, (255,255,255))
             curInRect = curIn.get_rect()
             curInRect.center = (round(curInRect.w/2), Iy)
             screen.blit(curIn, curInRect)
