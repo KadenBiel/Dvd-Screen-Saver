@@ -8,10 +8,11 @@ def rp(relative_path):
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
-    except Exception:
+        base_path = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+    except Exception as e:
+        print(e)
         base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
+    return os.path.abspath(os.path.join(base_path, relative_path))
 
 def checkIn(txt, min, max):
     try:
