@@ -237,7 +237,7 @@ while run:
                 else:
                     fullscr = False
                     screen = p.display.set_mode((width-20, height-80), p.RESIZABLE)
-                    p.mouse.set_visable(True)
+                    p.mouse.set_visible(True)
 
             #resets the logo to the center of the window
             if event.key == p.K_r:
