@@ -233,9 +233,11 @@ while run:
                 if not fullscr:
                     fullscr = True
                     screen = p.display.set_mode((0, 0), p.FULLSCREEN)
+                    p.mouse.set_visible(False)
                 else:
                     fullscr = False
                     screen = p.display.set_mode((width-20, height-80), p.RESIZABLE)
+                    p.mouse.set_visable(True)
 
             #resets the logo to the center of the window
             if event.key == p.K_r:
@@ -258,12 +260,15 @@ while run:
                     fpsS.show()
                     fpsL.show()
                     resetB.show()
+                    p.mouse.set_visible(True)
                 else:
                     speed.hide()
                     speedL.hide()
                     fpsS.hide()
                     fpsL.hide()
                     resetB.hide()
+                    if fullscr:
+                        p.mouse.set_visible(False)
 
     src = p.display.Info()
     width, height = src.current_w, src.current_h
