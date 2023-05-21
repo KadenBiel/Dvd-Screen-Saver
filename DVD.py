@@ -51,13 +51,19 @@ def save():
 
 def openSave():
     print('opening...')
-    saveF = open(rp('./save.dvd'), 'r')
-
     saveLines = []
-
-    for line in saveF:
-        saveLines.append(line)
+    try: 
+        saveF = open(rp('./save.dvd'), 'r')
+        for line in saveF:
+            saveLines.append(line)
+    except Exception as e:
+        print(e)
+        saveF = open(rp('./save.dvd'), 'w')
+        saveF.write('1.0\n60')
+        saveLines = ['1.0', '60']
     
+    saveF.close()
+
     speed.setValue(float(saveLines[0]))
     speedL.setText(speed.getValue())
     fpsS.setValue(float(saveLines[1]))
