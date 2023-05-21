@@ -1,6 +1,7 @@
 import pygame as p, pygame_widgets as pw, random as r, time as t, sys, tkinter as tk, os
 from pygame_widgets.slider import Slider
 from pygame_widgets.textbox import TextBox
+from pygame_widgets.button import Button
 
 def rp(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -12,7 +13,7 @@ def rp(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-def intIn(txt, min, max):
+def checkIn(txt, min, max):
     try:
         txt = float(txt)
         if txt > max or txt < min:
@@ -24,26 +25,80 @@ def intIn(txt, min, max):
 
 def submit(id, min, max):
     if id == 's':
-        if intIn(speedL.getText(), min, max):
+        if checkIn(speedL.getText(), min, max):
             speed.setValue(float(speedL.getText()))
         else:
             if str(speedL.getText()).lower() == 'fast':
                 speed.max = 120
                 speed.setValue(120)
             elif str(speedL.getText()).lower() == 'slow':
-                speed.min = 0
+                speed.min = .01
                 speed.setValue(.01)
             else:
                 speedL.setText(speed.getValue())
     elif id == 'f':
-        if intIn(fpsL.getText(), min, max):
+        if checkIn(fpsL.getText(), min, max):
             fpsS.setValue(float(fpsL.getText()))
         else:
             fpsL.setText(fpsS.getValue())
 
-os.environ['SDL_VIDEO_CENTERED'] = '1'
+def save():
+    saveF = open(rp('./save.dvd'), 'w')
+    for i in [speed.getValue(), '\n', fpsS.getValue()]:
+        saveF.write(str(i))
+    saveF.close()
+    print('saved')
+
+def openSave():
+    print('opening...')
+    saveF = open(rp('./save.dvd'), 'r')
+
+    saveLines = []
+
+    for line in saveF:
+        saveLines.append(line)
+    
+    speed.setValue(float(saveLines[0]))
+    speedL.setText(speed.getValue())
+    fpsS.setValue(float(saveLines[1]))
+    fpsL.setText(fpsS.getValue())
+    altSpeed = 'n'
+
+    if not checkIn(float(saveLines[0]), .5, 30):
+        if float(saveLines[0]) > 30:
+            altSpeed = 'f'
+            speed.max = 120
+            speedL.setText('fast')
+        else:
+            altSpeed = 's'
+            speed.min = .01
+            speedL.setText('slow')
+    return altSpeed
+
+def reset():
+    speed.setValue(1.0)
+    fpsS.setValue(60)
+
+p.init() #Initialize Pygame
+Font = p.font.Font(rp('dvdFont.ttf'), 25) #initializes font
+bigFont = p.font.Font(rp('dvdFont.ttf'), 35)
 width, height = 640, 480 #Initial screen width & height
-x, y, vel = 0, 0, [1, 1] #Makes coordinates and velocity
+screen = p.display.set_mode((width, height), p.RESIZABLE) #Sets screen to resizable mode
+speed = Slider(screen, 100, 50, 800, 20, min=.5, max=30, step=.25, initial=1, colour=(174, 235, 230))
+speed.hide()
+speedL = TextBox(screen, 100, 80, 50, 30, fontSize=20, radius=10, onSubmit=submit, onSubmitParams=('s', .5, 30), borderThickness=1, colour=(174, 235, 230))
+speedL.setText('1.0')
+speedL.hide()
+fpsS = Slider(screen, 100, 200, 800, 20, min=5, max=180, step=1, initial=60, colour=(174, 235, 230))
+fpsS.hide()
+fpsL = TextBox(screen, 100, 230, 40, 30, fontSize=20, radius=10, onSubmit=submit, onSubmitParams=('f', 5, 180), borderThickness=1, colour=(174, 235, 230))
+fpsL.setText('60')
+fpsL.hide()
+resetB = Button(screen, 100, 300, 50, 30, text='Reset', onClick=reset)
+resetB.hide()
+altSpeed = openSave()
+os.environ['SDL_VIDEO_CENTERED'] = '1'
+x, y, vel = 0, 0, [speed.getValue(), speed.getValue()] #Makes coordinates and velocity
 showInfo = False #sets bool to show display info
 fullscr = False #sets bool to toggle full screen
 iter = False #sets iteration bool for fullscreen toggles
@@ -58,28 +113,13 @@ helpmsg = ["----Help----", "F3: Show live in-game information", "F11: Fullscreen
 DVD = p.image.load(rp('./sprites/w.png')) #Loads a sprite
 DVDRECT = DVD.get_rect() #Makes object for the sprites to be loaded onto
 p.display.set_caption('DVD')#Sets executable capton
-screen = p.display.set_mode((width, height), p.RESIZABLE) #Sets screen to resizable mode
-fps = 60 #sets FPS
+fps = fpsS.getValue() #sets FPS
 clock = p.time.Clock() #sets FPS clock
-p.init() #Initialize Pygame
-Font = p.font.Font(rp('dvdFont.ttf'), 25) #initializes font
-bigFont = p.font.Font(rp('dvdFont.ttf'), 35)
 more = Font.render("--Press H for help--", True, (255, 255, 255)) #makes default on boot helper
 morerect = more.get_rect() #makes surface for default on boot helper
-speed = Slider(screen, 100, 50, 800, 20, min=.5, max=30, step=.25, initial=1, colour=(174, 235, 230))
-speed.hide()
-speedL = TextBox(screen, 100, 80, 50, 30, fontSize=20, radius=10, onSubmit=submit, onSubmitParams=('s', .5, 30), borderThickness=1, colour=(174, 235, 230))
-speedL.setText('1.0')
-speedL.hide()
-fpsS = Slider(screen, 100, 200, 800, 20, min=5, max=180, step=1, initial=60, colour=(174, 235, 230))
-fpsS.hide()
-fpsL = TextBox(screen, 100, 230, 40, 30, fontSize=20, radius=10, onSubmit=submit, onSubmitParams=('f', 5, 180), borderThickness=1, colour=(174, 235, 230))
-fpsL.setText('60')
-fpsL.hide()
-altSpeed = 'n'
 run = True
-
 x, y = r.choice([570, 571, 572]), r.choice([420, 421, 422]) #sets the start location
+counter = 0
 
 #Loads in sprites
 wht = p.image.load(rp('./sprites/w.png'))
@@ -211,11 +251,13 @@ while run:
                     speedL.show()
                     fpsS.show()
                     fpsL.show()
+                    resetB.show()
                 else:
                     speed.hide()
                     speedL.hide()
                     fpsS.hide()
                     fpsL.hide()
+                    resetB.hide()
 
     src = p.display.Info()
     width, height = src.current_w, src.current_h
@@ -282,6 +324,7 @@ while run:
         if showMenuHelp:
             morerect.center = (round(morerect.w/2), Iy)
             screen.blit(more, morerect)
+            counter += 1
 
     #displays settings menu
     if settings:
@@ -303,7 +346,8 @@ while run:
         speed.setWidth(width-200)
         speedL.setX(int(round(width/2))-int(round(speedL.getWidth()/2)))
         fpsS.setWidth(width-200)
-        fpsL.setX(int(round(width/2))-int(round(speedL.getWidth()/2)))
+        fpsL.setX(int(round(width/2))-int(round(fpsL.getWidth()/2)))
+        resetB.setX(int(round(width/2))-int(round(resetB.getWidth()/2)))
 
         if abs(vel[0]) != speed.getValue():
             if speed.getValue() > 30 and altSpeed != 'f':
@@ -340,8 +384,13 @@ while run:
         else:
             vel[1] = speed.getValue()
 
+    if counter >= fps*5:
+        showMenuHelp = False
+        counter = 0
+        
     pw.update(events)
     p.display.update() #updates screen
     clock.tick(fps) #updates fps clock
 
+save()
 p.quit()
