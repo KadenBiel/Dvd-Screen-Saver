@@ -1,5 +1,7 @@
 *.dvd
 *.spec
+*.exe
+*.toc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -114,4 +116,5 @@ build/DVD/Tree-01.toc
 build/DVD/Tree-02.toc
 build/DVD/warn-DVD.txt
 build/DVD/xref-DVD.html
+dist/DVD.exe
 dist/DVD.exe
